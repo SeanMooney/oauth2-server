@@ -8,7 +8,7 @@ class Scope implements ScopeInterface
 {
     public function getScope($scope, $clientId = null, $grantType = null)
     {
-        $db = \ezcDbInstance::get();
+        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
 
         $stmt = $db->prepare('SELECT * FROM oauth_scopes WHERE oauth_scopes.scope = :scope');
         $stmt->bindValue(':scope', $scope);

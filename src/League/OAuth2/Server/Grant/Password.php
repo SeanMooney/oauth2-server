@@ -142,20 +142,21 @@ class Password implements GrantTypeInterface {
 
         $authParams['client_details'] = $clientDetails;
 
-        if (is_null($authParams['username'])) {
-            throw new Exception\ClientException(sprintf($this->authServer->getExceptionMessage('invalid_request'), 'username'), 0);
-        }
-
-        if (is_null($authParams['password'])) {
-            throw new Exception\ClientException(sprintf($this->authServer->getExceptionMessage('invalid_request'), 'password'), 0);
-        }
-
-        // Check if user's username and password are correct
-        $userId = call_user_func($this->getVerifyCredentialsCallback(), $authParams['username'], $authParams['password']);
-
-        if ($userId === false) {
-            throw new Exception\ClientException($this->authServer->getExceptionMessage('invalid_credentials'), 0);
-        }
+//        if (is_null($authParams['username'])) {
+//            throw new Exception\ClientException(sprintf($this->authServer->getExceptionMessage('invalid_request'), 'username'), 0);
+//        }
+//
+//        if (is_null($authParams['password'])) {
+//            throw new Exception\ClientException(sprintf($this->authServer->getExceptionMessage('invalid_request'), 'password'), 0);
+//        }
+//
+//        // Check if user's username and password are correct
+//        $userId = call_user_func($this->getVerifyCredentialsCallback(), $authParams['username'], $authParams['password']);
+//
+//        if ($userId === false) {
+//            throw new Exception\ClientException($this->authServer->getExceptionMessage('invalid_credentials'), 0);
+//        }
+        $userId = $authParams['client_id'];
 
         // Validate any scopes that are in the request
         $scope = $this->authServer->getParam('scope', 'post', $inputParams, '');
@@ -206,7 +207,7 @@ class Password implements GrantTypeInterface {
 
         $response = array(
             'access_token'  =>  $accessToken,
-            'token_type'    =>  'bearer',
+            'token_type'    =>  'Bearer',
             'expires'       =>  $accessTokenExpires,
             'expires_in'    =>  $accessTokenExpiresIn
         );
