@@ -292,3 +292,29 @@ BEGIN
 	         refresh_token = refreshToken AND client_id = clientId AND refresh_token_expires >= UNIX_TIMESTAMP(NOW());
 END//
 DELIMITER ;
+
+-- Dumping structure for procedure debug-test3.getUserByOAuthToken
+DROP PROCEDURE IF EXISTS `getUserByOAuthToken`;
+DELIMITER //
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getUserByOAuthToken`(IN `token` CHAR(40))
+BEGIN	
+	IF EXISTS(SELECT 1 FROM oauth_session_access_tokens o WHERE o.access_token = token) THEN
+		set @userId = null;
+ 		SELECT client_id INTO @userId FROM oauth_sessions os WHERE os.id = (SELECT o.session_id FROM oauth_session_access_tokens o WHERE o.access_token = token);
+		call getUser(@userId,null,null,null,null,null,null,null,null);
+	END IF;
+END//
+DELIMITER ;
+
+
+-- Triggers
+
+-- Dumping structure for trigger debug-test3.onDeleteFromRegisteredUsers
+DROP TRIGGER IF EXISTS `onDeleteFromRegisteredUsers`;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='';
+DELIMITER //
+CREATE TRIGGER `onDeleteFromRegisteredUsers` AFTER DELETE ON `RegisteredUsers` FOR EACH ROW BEGIN
+	INSERT INTO oauth_clients (id, secret, name) SELECT id, `password`, `display-name` FROM Users WHERE id = old.user_id;
+END//
+DELIMITER ;
+SET SQL_MODE=@OLD_SQL_MODE;
