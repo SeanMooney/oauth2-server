@@ -210,8 +210,23 @@ BEGIN
 	if clientId='' then set clientId=null;end if;
 	if clientSecret='' then set clientSecret=null;end if;
 	if redirectUri='' then set redirectUri=null;end if;
+
+	IF ( not ISNULL(redirectUri)  and  ISNULL(clientSecret)) then
+		SELECT oc.id, oc.secret, oce.redirect_uri, oc.name FROM oauth_clients oc
+		LEFT JOIN oauth_client_endpoints oce ON oce.client_id = oc.id
+		WHERE isNullOrEqual(oc.id,clientId) AND isNullOrEqual(oce.redirect_uri,redirectUri);
 	
-	SELECT oc.id, oc.secret, oce.redirect_uri, oc.name FROM oauth_clients oc LEFT JOIN oauth_client_endpoints oce ON oce.client_id = oc.id WHERE isNullOrEqual(oc.id,clientId) AND isNullOrEqual(oce.redirect_uri,redirectUri);	
+	elseif (not ISNULL(clientSecret) and ISNULL(redirectUri)) then
+		SELECT oc.id, oc.secret, oce.redirect_uri, oc.name FROM oauth_clients oc
+		LEFT JOIN oauth_client_endpoints oce ON oce.client_id = oc.id
+		WHERE isNullOrEqual(oc.id,clientId);
+	
+	elseif (not ISNULL(clientSecret) and not ISNULL(redirectUri)) then
+		SELECT oc.id, oc.secret, oce.redirect_uri, oc.name FROM oauth_clients oc
+		LEFT JOIN oauth_client_endpoints oce ON oce.client_id = oc.id
+		WHERE isNullOrEqual(oce.redirect_uri,redirectUri);
+
+	end if;
 END//
 DELIMITER ;
 
