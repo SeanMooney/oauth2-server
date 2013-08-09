@@ -103,7 +103,8 @@ DELIMITER //
 CREATE DEFINER=`root`@`localhost` PROCEDURE `oauthAssociateAccessToken`(IN `sessionId` INT, IN `accessToken` CHAR(40), IN `accessTokenExpires` INT)
 BEGIN
 	INSERT INTO oauth_session_access_tokens (session_id, access_token, access_token_expires)
-         VALUE (sessionId, accessToken, accessTokenExpires);
+        VALUE (sessionId, accessToken, accessTokenExpires);
+        select LAST_INSERT_ID();
 END//
 DELIMITER ;
 
@@ -114,7 +115,8 @@ DELIMITER //
 CREATE DEFINER=`root`@`localhost` PROCEDURE `oauthAssociateAuthCode`(IN `sessionId` INT, IN `authCode` CHAR(40), IN `AuthCodeExpires` INT)
 BEGIN
 	INSERT INTO oauth_session_authcodes (session_id, auth_code, auth_code_expires)
-         VALUE (sessionId, authCode, authCodeExpires);
+        VALUE (sessionId, authCode, authCodeExpires);
+        select LAST_INSERT_ID();
 END//
 DELIMITER ;
 
@@ -166,7 +168,8 @@ DROP PROCEDURE IF EXISTS `oauthCreateSession`;
 DELIMITER //
 CREATE DEFINER=`root`@`localhost` PROCEDURE `oauthCreateSession`(IN `clientId` INT, IN `ownerType` ENUM('user','client'), IN `ownerId` VARCHAR(255))
 BEGIN
-	INSERT INTO oauth_sessions (client_id, owner_type,  owner_id) VALUE (clientId, ownerType, ownerId);
+    INSERT INTO oauth_sessions (client_id, owner_type,  owner_id) VALUE (clientId, ownerType, ownerId);
+    select LAST_INSERT_ID();
 END//
 DELIMITER ;
 
