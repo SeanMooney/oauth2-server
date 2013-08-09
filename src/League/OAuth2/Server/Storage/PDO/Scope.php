@@ -1,5 +1,7 @@
 <?php
 
+//if (!class_exists('PDOWrapper')) require_once __DIR__."/PDOWrapper.php";
+
 namespace League\OAuth2\Server\Storage\PDO;
 
 use League\OAuth2\Server\Storage\ScopeInterface;
@@ -8,24 +10,18 @@ class Scope implements ScopeInterface
 {
     public function getScope($scope, $clientId = null, $grantType = null)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('SELECT * FROM oauth_scopes WHERE oauth_scopes.scope = :scope');
-        $stmt->bindValue(':scope', $scope);
-        $stmt->execute();
-
-        $row = $stmt->fetchObject();
-
-        if ($row === false) {
+        $args = \PDOWrapper::cleanseNullOrWrapStr($scope);
+        
+        if($result = \PDOWrapper::call("oauthGetScope", $args)) {
+            $result = $result[0];
+            return array(
+                'id' =>  $result['id'],
+                'scope' =>  $result['scope'],
+                'name'  =>  $result['name'],
+                'description'  =>  $result['description']
+            );
+        } else {
             return false;
         }
-
-        return array(
-            'id' =>  $row->id,
-            'scope' =>  $row->scope,
-            'name'  =>  $row->name,
-            'description'  =>  $row->description
-        );
-
     }
 }

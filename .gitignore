@@ -4,3 +4,6 @@
 /build/coverage
 /docs
 /testing
+/nbproject/private/
+src/League/OAuth2/Server/conf.ini
+

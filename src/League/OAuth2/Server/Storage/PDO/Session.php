@@ -1,5 +1,7 @@
 <?php
 
+//if (!class_exists('PDOWrapper')) require_once __DIR__."/PDOWrapper.php";
+
 namespace League\OAuth2\Server\Storage\PDO;
 
 use League\OAuth2\Server\Storage\SessionInterface;
@@ -8,200 +10,162 @@ class Session implements SessionInterface
 {
     public function createSession($clientId, $ownerType, $ownerId)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('INSERT INTO oauth_sessions (client_id, owner_type,  owner_id) VALUE
-         (:clientId, :ownerType, :ownerId)');
-        $stmt->bindValue(':clientId', $clientId);
-        $stmt->bindValue(':ownerType', $ownerType);
-        $stmt->bindValue(':ownerId', $ownerId);
-        $stmt->execute();
-
-        return $db->lastInsertId();
+        $args = \PDOWrapper::cleanseNull($clientId)
+                .",".\PDOWrapper::cleanseNullOrWrapStr($ownerType)
+                .",".\PDOWrapper::cleanseNull($ownerId);
+        
+        if($result = \PDOWrapper::call("oauthCreateSession", $args)) {
+             return $db->lastInsertId();
+        } else {
+            return false;
+        }
     }
 
     public function deleteSession($clientId, $ownerType, $ownerId)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('DELETE FROM oauth_sessions WHERE client_id = :clientId AND
-         owner_type = :type AND owner_id = :typeId');
-        $stmt->bindValue(':clientId', $clientId);
-        $stmt->bindValue(':type', $ownerType);
-        $stmt->bindValue(':typeId', $ownerId);
-        $stmt->execute();
+        $args = \PDOWrapper::cleanseNull($clientId)
+                .",".\PDOWrapper::cleanseNullOrWrapStr($ownerType)
+                .",".\PDOWrapper::cleanseNull($ownerId);
+        
+        \PDOWrapper::call("oauthDeleteSession", $args);
     }
 
     public function associateRedirectUri($sessionId, $redirectUri)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('INSERT INTO oauth_session_redirects (session_id, redirect_uri)
-         VALUE (:sessionId, :redirectUri)');
-        $stmt->bindValue(':sessionId', $sessionId);
-        $stmt->bindValue(':redirectUri', $redirectUri);
-        $stmt->execute();
+        $args = \PDOWrapper::cleanseNull($sessionId)
+                .",".\PDOWrapper::cleanseNullOrWrapStr($redirectUri);
+        
+       \PDOWrapper::call("oauthAssociateRedirectUri", $args);
     }
 
     public function associateAccessToken($sessionId, $accessToken, $expireTime)
-    {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('INSERT INTO oauth_session_access_tokens (session_id, access_token, access_token_expires)
-         VALUE (:sessionId, :accessToken, :accessTokenExpire)');
-        $stmt->bindValue(':sessionId', $sessionId);
-        $stmt->bindValue(':accessToken', $accessToken);
-        $stmt->bindValue(':accessTokenExpire', $expireTime);
-        $stmt->execute();
-
-        return $db->lastInsertId();
+    {      
+        $args = \PDOWrapper::cleanseNull($sessionId)
+                .",".\PDOWrapper::cleanseNullOrWrapStr($accessToken)
+                .",".\PDOWrapper::cleanseNull($expireTime);
+        
+        if($result = \PDOWrapper::call("oauthAssociateAccessToken", $args)) {
+             return $db->lastInsertId();
+        } else {
+            return false;
+        }
     }
 
     public function associateRefreshToken($accessTokenId, $refreshToken, $expireTime, $clientId)
-    {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('INSERT INTO oauth_session_refresh_tokens (session_access_token_id, refresh_token, refresh_token_expires, client_id) VALUE
-         (:accessTokenId, :refreshToken, :expireTime, :clientId)');
-        $stmt->bindValue(':accessTokenId', $accessTokenId);
-        $stmt->bindValue(':refreshToken', $refreshToken);
-        $stmt->bindValue(':expireTime', $expireTime);
-        $stmt->bindValue(':clientId', $clientId);
-        $stmt->execute();
+    {       
+        $args = \PDOWrapper::cleanseNull($accessTokenId)
+                .",".\PDOWrapper::cleanseNullOrWrapStr($refreshToken)
+                .",".\PDOWrapper::cleanseNull($expireTime)
+                .",".\PDOWrapper::cleanseNull($clientId);
+        
+        \PDOWrapper::call("oauthAssociateRefreshToken", $args);
     }
 
     public function associateAuthCode($sessionId, $authCode, $expireTime)
-    {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('INSERT INTO oauth_session_authcodes (session_id, auth_code, auth_code_expires)
-         VALUE (:sessionId, :authCode, :authCodeExpires)');
-        $stmt->bindValue(':sessionId', $sessionId);
-        $stmt->bindValue(':authCode', $authCode);
-        $stmt->bindValue(':authCodeExpires', $expireTime);
-        $stmt->execute();
-
-        return $db->lastInsertId();
+    {        
+        $args = \PDOWrapper::cleanseNull($sessionId)
+                .",".\PDOWrapper::cleanseNullOrWrapStr($authCode)
+                .",".\PDOWrapper::cleanseNull($expireTime);
+        
+        if($result = \PDOWrapper::call("oauthAssociateAuthCode", $args)) {
+             return $db->lastInsertId();
+        }
     }
 
     public function removeAuthCode($sessionId)
-    {
-        $db = \PDOWrapper::getInstance();
-        $db = $db->getConnection();
-
-        $stmt = $db->prepare('DELETE FROM oauth_session_authcodes WHERE session_id = :sessionId');
-        $stmt->bindValue(':sessionId', $sessionId);
-        $stmt->execute();
+    {       
+        $args = \PDOWrapper::cleanseNull($sessionId);
+        \PDOWrapper::call("oauthRemoveAuthCode", $args);
     }
 
     public function validateAuthCode($clientId, $redirectUri, $authCode)
-    {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('SELECT oauth_sessions.id AS session_id, oauth_session_authcodes.id AS authcode_id
-         FROM oauth_sessions JOIN oauth_session_authcodes ON oauth_session_authcodes.`session_id`
-          = oauth_sessions.id JOIN oauth_session_redirects ON oauth_session_redirects.`session_id`
-          = oauth_sessions.id WHERE oauth_sessions.client_id = :clientId AND oauth_session_authcodes.`auth_code`
-          = :authCode AND  `oauth_session_authcodes`.`auth_code_expires` >= :time AND
-           `oauth_session_redirects`.`redirect_uri` = :redirectUri');
-        $stmt->bindValue(':clientId', $clientId);
-        $stmt->bindValue(':redirectUri', $redirectUri);
-        $stmt->bindValue(':authCode', $authCode);
-        $stmt->bindValue(':time', time());
-        $stmt->execute();
-
-        $result = $stmt->fetchObject();
-
-        return ($result === false) ? false : (array) $result;
+    {       
+        $args = \PDOWrapper::cleanseNull($clientId)
+                .",".\PDOWrapper::cleanseNullOrWrapStr($redirectUri)
+                .",".\PDOWrapper::cleanseNullOrWrapStr($authCode);
+        
+        if($result = \PDOWrapper::call("oauthValidateAuthCode", $args)) {
+             return $result[0];
+        } else {
+            return false;
+        }
     }
 
     public function validateAccessToken($accessToken)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('SELECT session_id, oauth_sessions.`client_id`, oauth_sessions.`owner_id`, oauth_sessions.`owner_type` FROM `oauth_session_access_tokens` JOIN oauth_sessions ON oauth_sessions.`id` = session_id WHERE  access_token = :accessToken AND access_token_expires >= ' . time());
-        $stmt->bindValue(':accessToken', $accessToken);
-        $stmt->execute();
-
-        $result = $stmt->fetchObject();
-        return ($result === false) ? false : (array) $result;
+        $args = \PDOWrapper::cleanseNullOrWrapStr($accessToken);
+        
+        if($result = \PDOWrapper::call("oauthValidateAccessToken", $args)) {
+             return $result[0];
+        } else {
+            return false;
+        }
     }
 
     public function removeRefreshToken($refreshToken)
-    {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('DELETE FROM `oauth_session_refresh_tokens` WHERE refresh_token = :refreshToken');
-        $stmt->bindValue(':refreshToken', $refreshToken);
-        $stmt->execute();
+    {      
+        $args = \PDOWrapper::cleanseNullOrWrapStr($refreshToken);        
+        \PDOWrapper::call("oauthRemoveRefreshToken", $args);
     }
 
     public function validateRefreshToken($refreshToken, $clientId)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('SELECT session_access_token_id FROM `oauth_session_refresh_tokens` WHERE
-         refresh_token = :refreshToken AND client_id = :clientId AND refresh_token_expires >= ' . time());
-        $stmt->bindValue(':refreshToken', $refreshToken);
-        $stmt->bindValue(':clientId', $clientId);
-        $stmt->execute();
-
-        $result = $stmt->fetchObject();
-        return ($result === false) ? false : $result->session_access_token_id;
+        $args = \PDOWrapper::cleanseNullOrWrapStr($refreshToken)
+                .",".\PDOWrapper::cleanseNull($clientId);
+        
+        if($result = \PDOWrapper::call("oauthValidateRefreshToken", $args)) {
+             return $result[0]['session_access_token_id'];
+        } else {
+            return false;
+        }    
     }
 
     public function getAccessToken($accessTokenId)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('SELECT * FROM `oauth_session_access_tokens` WHERE `id` = :accessTokenId');
-        $stmt->bindValue(':accessTokenId', $accessTokenId);
-        $stmt->execute();
-
-        $result = $stmt->fetchObject();
-        return ($result === false) ? false : (array) $result;
+        $args = \PDOWrapper::cleanseNull($accessTokenId);
+        
+        if($result = \PDOWrapper::call("oauthGetAccessToken", $args)) {
+             return $result[0];
+        } else {
+            return false;
+        }  
     }
 
     public function associateAuthCodeScope($authCodeId, $scopeId)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('INSERT INTO `oauth_session_authcode_scopes` (`oauth_session_authcode_id`, `scope_id`) VALUES (:authCodeId, :scopeId)');
-        $stmt->bindValue(':authCodeId', $authCodeId);
-        $stmt->bindValue(':scopeId', $scopeId);
-        $stmt->execute();
+        $args = \PDOWrapper::cleanseNull($authCodeId)
+                .",".\PDOWrapper::cleanseNull($scopeId);
+        
+        \PDOWrapper::call("oauthAssociateAuthCodeScope", $args);
     }
 
     public function getAuthCodeScopes($oauthSessionAuthCodeId)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('SELECT scope_id FROM `oauth_session_authcode_scopes` WHERE oauth_session_authcode_id = :authCodeId');
-        $stmt->bindValue(':authCodeId', $oauthSessionAuthCodeId);
-        $stmt->execute();
-
-        return $stmt->fetchAll();
+        $args = \PDOWrapper::cleanseNull($oauthSessionAuthCodeId);
+        
+        if($result = \PDOWrapper::call("oauthGetAuthCodeScopes", $args)) {
+             return $result[0]; // fetchAll() - PDO
+        } else {
+            return false; 
+        } 
     }
 
     public function associateScope($accessTokenId, $scopeId)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('INSERT INTO `oauth_session_token_scopes` (`session_access_token_id`, `scope_id`)
-         VALUE (:accessTokenId, :scopeId)');
-        $stmt->bindValue(':accessTokenId', $accessTokenId);
-        $stmt->bindValue(':scopeId', $scopeId);
-        $stmt->execute();
+        $args = \PDOWrapper::cleanseNull($accessTokenId)
+                .",".\PDOWrapper::cleanseNull($scopeId);
+        
+        \PDOWrapper::call("oauthAssociateScope", $args);
     }
 
     public function getScopes($accessToken)
     {
-        $db = \PDOWrapper::getInstance();        $db = $db->getConnection();
-
-        $stmt = $db->prepare('SELECT oauth_scopes.* FROM oauth_session_token_scopes JOIN oauth_session_access_tokens ON oauth_session_access_tokens.`id` = `oauth_session_token_scopes`.`session_access_token_id` JOIN oauth_scopes ON oauth_scopes.id = `oauth_session_token_scopes`.`scope_id` WHERE access_token = :accessToken');
-        $stmt->bindValue(':accessToken', $accessToken);
-        $stmt->execute();
-
-        return $stmt->fetchAll();
+        $args = \PDOWrapper::cleanseNullOrWrapStr($accessToken);
+        
+        if($result = \PDOWrapper::call("oauthGetScopes", $args)) {
+             return $result[0]; // fetchAll() - PDO
+        } else {
+            return array();
+        }  
     }
 }
