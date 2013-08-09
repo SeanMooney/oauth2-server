@@ -15,7 +15,7 @@ class Session implements SessionInterface
                 .",".\PDOWrapper::cleanseNull($ownerId);
         
         if($result = \PDOWrapper::call("oauthCreateSession", $args)) {
-             return $db->lastInsertId();
+             return $result[0][0];
         } else {
             return false;
         }
@@ -45,7 +45,7 @@ class Session implements SessionInterface
                 .",".\PDOWrapper::cleanseNull($expireTime);
         
         if($result = \PDOWrapper::call("oauthAssociateAccessToken", $args)) {
-             return $db->lastInsertId();
+             return $result[0][0];
         } else {
             return false;
         }
@@ -68,7 +68,7 @@ class Session implements SessionInterface
                 .",".\PDOWrapper::cleanseNull($expireTime);
         
         if($result = \PDOWrapper::call("oauthAssociateAuthCode", $args)) {
-             return $db->lastInsertId();
+             return $result[0][0];
         }
     }
 
